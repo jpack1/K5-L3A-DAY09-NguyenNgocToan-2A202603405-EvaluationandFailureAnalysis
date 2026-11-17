@@ -81,5 +81,5 @@ Quy tắc: tiền và phê duyệt luôn chấm bằng code. Judge chỉ dùng c
 ## Phê duyệt
 | Vai trò | Tên | Ngày |
 |---|---|---|
-| Product | | |
-| Eval owner (giữ gate) | | |
+| Product | Nguyễn Ngọc Toàn (2A202603405) | 2026-11-17 |
+| Eval owner (giữ gate) | Nguyễn Ngọc Toàn (2A202603405) | 2026-11-17 |
