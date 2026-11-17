@@ -5,6 +5,18 @@ import pytest
 pytestmark = pytest.mark.student
 
 
+@pytest.fixture(autouse=True)
+def _restore_shapes():
+    # investigate() registers the lab9 variants into lab8's global SHAPES; Lab 8's own contract
+    # test asserts exactly four shapes, so put the registry back after each test.
+    from lab8.shapes import SHAPES
+
+    saved = dict(SHAPES)
+    yield
+    SHAPES.clear()
+    SHAPES.update(saved)
+
+
 def db_fact_kept(shape):
     from pydantic_evals.evaluators import EvaluatorContext
 
