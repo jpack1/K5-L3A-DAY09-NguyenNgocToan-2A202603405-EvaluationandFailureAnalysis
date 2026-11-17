@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from lab8.console import utf8_stdio
@@ -33,8 +34,100 @@ def integrity_check(pr: dict, base: dict, spec: dict, base_spec: dict | None = N
         including dropping no_significant_drop)
       - an item's slice tags in PR rows differ from the baseline's (relabelling an item out of a
         slice hides its regression from the slice gate)"""
-    # TODO M7
-    return []
+    from lab9.eval import aggregate
+    from lab9.graders import GRADERS
+
+    problems: list[str] = []
+    rows = pr.get("rows") or []
+    man = pr.get("manifest") or {}
+
+    # 1. NaN / inf metric values (nan < min is False, so a naive gate lets them through).
+    problems += [f"metric {k} is {v}" for k, v in (pr.get("metrics") or {}).items()
+                 if isinstance(v, float) and not math.isfinite(v)]
+
+    # 2. Row count and duplicates: every item x seed exactly once.
+    want = (man.get("items") or 0) * len(man.get("seeds") or [])
+    if len(rows) != want:
+        problems.append(f"{len(rows)} rows, manifest says {man.get('items')} items x {len(man.get('seeds') or [])} seeds = {want}")
+    keys = [(r.get("item_id"), r.get("seed")) for r in rows]
+    dups = sorted({k for k in keys if keys.count(k) > 1}, key=str)
+    if dups:
+        problems.append(f"duplicate (item, seed) rows: {dups[:5]}")
+
+    # 3. Same (item, seed) set and same seeds as the baseline (no cherry-picking).
+    base_keys = {(r.get("item_id"), r.get("seed")) for r in base.get("rows") or []}
+    if set(keys) != base_keys:
+        miss, extra = base_keys - set(keys), set(keys) - base_keys
+        problems.append(f"(item, seed) set differs from baseline: {len(miss)} missing, {len(extra)} extra")
+    if sorted(man.get("seeds") or []) != sorted((base.get("manifest") or {}).get("seeds") or []):
+        problems.append(f"seeds {man.get('seeds')} != baseline seeds {(base.get('manifest') or {}).get('seeds')}")
+
+    # 4. Crashed graders: reported failures, or a graded metric that is None on some row.
+    if pr.get("evaluator_failures"):
+        problems.append(f"{len(pr['evaluator_failures'])} evaluator failure(s): {pr['evaluator_failures'][:2]}")
+    graded = [m["id"] for m in spec.get("metrics", []) if m["id"] in GRADERS]
+    for mid in graded:
+        missing = sum(1 for r in rows if r.get(mid) is None)
+        if missing:
+            problems.append(f"{missing} row(s) have no value for graded metric {mid}")
+
+    # 5. Hand-edited metrics: the reported numbers must be what the rows add up to.
+    if rows:
+        row_ids = [m for m in graded if all(m in r for r in rows)]
+        has_cost = all("cost" in r for r in rows)
+        recomputed = aggregate([{"cost": 0.0, **r} for r in rows], row_ids, k_values=spec.get("pass_k", []))
+        for k, v in recomputed.items():
+            got = (pr.get("metrics") or {}).get(k)
+            if k == "cost_per_success" and not has_cost:
+                continue
+            if isinstance(got, (int, float)) and math.isfinite(got) and v is not None and abs(got - v) > 1e-3:
+                problems.append(f"metric {k}={got} but rows give {v}")
+
+    # 6. Slice tags must match the baseline's (relabelling an item hides it from the slice gate).
+    def tags(rep: dict) -> dict:
+        out: dict = {}
+        for r in rep.get("rows") or []:
+            out.setdefault(r.get("item_id"), set()).add(tuple(sorted(r.get("slices") or [])))
+        return out
+    pt, bt = tags(pr), tags(base)
+    relabelled = sorted(i for i in pt if i in bt and pt[i] != bt[i])
+    if relabelled:
+        problems.append(f"slice tags differ from baseline for {relabelled[:5]}")
+
+    # 7. Ratchet: on the same eval-set version, the PR spec may only be as strict or stricter.
+    if base_spec is not None and spec.get("eval_set_version") == base_spec.get("eval_set_version"):
+        problems += [f"ratchet: {p}" for p in _looser(base_spec, spec)]
+    return problems
+
+
+def _looser(old: dict, new: dict) -> list[str]:
+    """Ways `new` is laxer than `old`: a lower min, a higher max / max_increase, a dropped
+    no_significant_drop or blocking flag, a missing metric or slice."""
+    out: list[str] = []
+
+    def cmp(name: str, o: dict, n: dict | None, th_o: dict, th_n: dict) -> None:
+        if n is None:
+            out.append(f"{name} removed")
+            return
+        if "min" in th_o and th_n.get("min", float("-inf")) < th_o["min"]:
+            out.append(f"{name} min {th_o['min']} -> {th_n.get('min')}")
+        for k in ("max", "max_increase"):
+            if k in th_o and th_n.get(k, float("inf")) > th_o[k]:
+                out.append(f"{name} {k} {th_o[k]} -> {th_n.get(k)}")
+        if th_o.get("no_significant_drop") and not th_n.get("no_significant_drop"):
+            out.append(f"{name} no_significant_drop dropped")
+        if o.get("blocking") and not n.get("blocking"):
+            out.append(f"{name} no longer blocking")
+
+    new_m = {m["id"]: m for m in new.get("metrics") or []}
+    for m in old.get("metrics") or []:
+        n = new_m.get(m["id"])
+        cmp(f"metric {m['id']}", m, n, m.get("threshold") or {}, (n or {}).get("threshold") or {})
+    new_s = {(s["name"], s["metric"]): s for s in new.get("slices") or []}
+    for s in old.get("slices") or []:
+        n = new_s.get((s["name"], s["metric"]))
+        cmp(f"slice {s['name']}/{s['metric']}", s, n, s, n or {})
+    return out
 
 
 def slice_check(pr: dict, base: dict, spec: dict) -> tuple[list[str], list[str]]:

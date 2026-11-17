@@ -131,3 +131,26 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
 - **Giới hạn cỡ mẫu:**
   - Một bug chỉ bật khi `seed % 3 == 0` thì số seed bị lỗi phụ thuộc vào bộ seed: bộ 11–55 có 1 seed (33), bộ 66–110 có 2 seed (66, 99), còn bộ 10, 20, 40, 50, 70 thì không có seed nào.
   - Với chỉ 5 seed, bug như vậy **không được phát hiện ổn định**: tuỳ bộ seed, gate có thể thấy hoặc không. Tôi giữ nguyên sàn chứ không hạ ngưỡng để "bắt" lỗi này. Cách đúng là tăng số seed, hoặc chọn seed ngẫu nhiên mỗi lần chạy CI.
+
+### M7: chống gian lận eval (`gate.integrity_check`)
+Gate từ chối so sánh report khi phát hiện một trong các dấu hiệu sau, rồi exit 1 với lý do `INTEGRITY`:
+
+| # | Kiểm tra | Trap bắt được |
+|---|---|---|
+| 1 | Metric là NaN hoặc inf | grader crash biến thành NaN (vì `nan < min` là False) |
+| 2 | Số row ≠ số item × số seed; có (item, seed) trùng | `dropped_failing_rows`; thay row fail bằng bản sao một row pass |
+| 3 | Tập (item, seed) hoặc danh sách seed khác baseline | `cherry_picked_seeds` |
+| 4 | `evaluator_failures` khác rỗng, hoặc một metric có grader nhận giá trị `None` ở một row nào đó | `evaluator_errors_as_nan`; lỗi grader trên một run "xanh" |
+| 5 | Metric trong report khác giá trị tính lại từ rows (lệch quá 1e-3) | sửa tay `metrics`, ví dụ ghi `pass_hat_5 = 1.0` |
+| 6 | Tag slice của một item khác baseline | gán lại tag để item rời khỏi slice `money_movement` |
+| 7 | Ratchet khi có `--base-spec` và cùng eval-set version: `min` giảm, `max` hoặc `max_increase` tăng, bỏ `no_significant_drop`, bỏ `blocking`, xoá metric hoặc slice | `loosened_spec` |
+
+- **Kết quả:**
+  - `python -m lab9.traps --pr reports/eval_slice_regression.json --baseline reports/baseline_v2.json --spec config/metric_spec_v2.yaml`: cả 4 trap công khai bị chặn, exit 0.
+  - `tests/test_lab9_advanced_integrity.py` dựng thêm 5 trap từ `baseline_v2` thật, và xác nhận report trung thực không bị báo nhầm.
+  - Scorecard sau M7 vẫn là 3/3 regression bị chặn, 0 báo nhầm.
+- **Trap ẩn có thể còn lọt:**
+  - **Sửa giá trị trong rows cho khớp với metrics**, ví dụ lật `pass_rate: false` thành `true` rồi tính lại metric. Report vẫn nhất quán nội bộ, nên `integrity_check` không thấy. Cách chặn là CI tự chạy lại eval thay vì tin report do PR nộp. Job `eval-gate` đã làm vậy với `swarm`, và `ci_check` so baseline với lần chạy lại.
+  - **Sửa `labels_v*.json`:** `eval_set_sha` chỉ băm file item, không băm file nhãn. Đổi nhãn cho khớp với output sai thì gate không biết. Nên băm cả nhãn vào manifest.
+  - **Nới spec mà không truyền `--base-spec`:** ratchet chỉ chạy khi có `--base-spec`, mà job `eval-gate` hiện không truyền tham số này. Nên lấy spec từ `main` để so trong CI.
+  - **Tăng eval-set version để né ratchet:** ratchet chỉ áp khi hai spec cùng version, nên chỉ cần đổi `eval_set_version` là thoát. Cần review thủ công mọi PR đổi version.
