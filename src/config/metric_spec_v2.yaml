@@ -22,5 +22,8 @@ metrics:
   # FM-08 (carried over from v1): every amount stated in the reply must equal the ledger refund_vnd.
   - {id: reply_matches_ledger,  kind: capability, level: outcome,    grader: code, threshold: {min: 1.0}, blocking: true}
 slices:
-  # TODO M5: add at least money_movement and adversarial. Example of the shape:
-  - {name: denial, metric: pass_rate, min: 0.90, no_significant_drop: true, blocking: true}
+  # Slice tags come from the LABEL (evalset.slices_for), never from the agent's output.
+  - {name: money_movement, metric: pass_rate, min: 0.90, no_significant_drop: true, blocking: true}
+  - {name: money_movement, metric: refund_amount_correct, min: 0.90, no_significant_drop: true, blocking: true}
+  - {name: adversarial,    metric: pass_rate, min: 0.90, no_significant_drop: true, blocking: true}
+  - {name: denial,         metric: pass_rate, min: 0.90, no_significant_drop: true, blocking: true}

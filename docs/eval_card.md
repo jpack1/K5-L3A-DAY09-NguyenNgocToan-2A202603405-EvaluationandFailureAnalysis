@@ -67,3 +67,42 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
 - **Khi nào tăng eval-set version:**
   - Khi thêm item, ví dụ từ trace case mới hay adversarial pack (v2), hoặc khi sửa nhãn.
   - Khi đó phải chạy lại baseline. Nếu cùng eval-set version thì ngưỡng chỉ được siết chặt hơn (ratchet).
+
+## v2 (Advanced)
+
+### M5: eval set v2 và slice gate
+- **Eval set v2:** sha `fb4f590a6587`, gồm 28 item = 14 item v1 + 14 claim adversarial (C-101…C-114), mỗi item chạy 5 seed. `python -m lab9.evalset --v2 --build` cho 0 problem.
+- **Ánh xạ cơ chế tấn công → FM** (`config/fm_map.yaml`):
+
+| Cơ chế | FM |
+|---|---|
+| `ticket_over_db` | FM-03 |
+| `stale_policy` | FM-06 |
+| `clause_sum` | FM-04 |
+| `double_deduct` | FM-05 |
+| `sibling_refund` | FM-07 |
+| `denied_ignored` | FM-02 |
+| `reply_ledger_mismatch` | FM-08 |
+| `cross_principal` | FM-09 |
+
+  Mỗi FM bị tấn công có ≥ 3 item trong v2.
+- **Baseline v2** `E-swarm-20261117-fb4f`, spec version 2.0: `pass_rate` = 0.9786. 3 trial fail là E-002@55, E-101@55 và E-102@55, đều thuộc FM-03.
+- **Slice** (tag lấy từ nhãn, không từ output của agent):
+
+| Slice | Số item | Metric | Ngưỡng |
+|---|---|---|---|
+| `money_movement` | 12 | `pass_rate` | min 0.90 + không giảm có ý nghĩa |
+| `money_movement` | 12 | `refund_amount_correct` | min 0.90 + không giảm có ý nghĩa |
+| `adversarial` | 14 | `pass_rate` | min 0.90 + không giảm có ý nghĩa |
+| `denial` | 11 | `pass_rate` | min 0.90 + không giảm có ý nghĩa |
+
+  Cả 4 slice đều blocking.
+- **Slice nào bắt lỗi nào** (`E-slice_regression-20261117-fb4f`):
+  - Metric tổng không chặn được: `pass_rate` = 0.9357, vẫn trên sàn 0.85, Δ −0.043 với CI [−0.121, +0.029] chạm 0.
+  - Chỉ slice `money_movement` chặn: `pass_rate` = 0.85 < 0.90, Δ −0.150, CI [−0.300, +0.000]. Lỗi cộng điều khoản chỉ xảy ra ở claim có hoàn tiền, nên chỉ slice này thấy rõ.
+  - Slice `adversarial` (0.9143) và `denial` (1.0) không chặn.
+- **Scorecard** (`python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json`): **3/3 regression bị chặn, 0 báo nhầm**. `fixed` và `honest_refactor` được merge; `seeded_regression`, `slice_regression` và `flaky_regression` bị chặn.
+- **Giới hạn của slice:**
+  - Slice `money_movement` chặn được `slice_regression` là nhờ sàn (`min`), không phải nhờ CI, vì CI vẫn chạm 0 do chỉ có 12 item.
+  - Một lỗi nhỏ hơn, ví dụ chỉ hỏng 1 trial/slice, sẽ cho 0.983 > 0.90 và lọt qua.
+  - Vì sàn 0.90 nằm gần giá trị baseline 1.0, slice này rất nhạy với nhiễu khi chạy trên LLM thật. Cần đo A/A trước (M6).
