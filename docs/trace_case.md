@@ -33,7 +33,7 @@ python -m lab9.trace_case --shape fixed --claim C-002 --seed 55
 
 | Trường | Nội dung |
 |---|---|
-| Trial | `swarm C-002@55`. Đây là trial fail duy nhất trong baseline `E-swarm-20261117-456c` (row `E-002`, seed 55). |
+| Trial | `swarm C-002@55`. Đây là trial fail duy nhất trong baseline `E-swarm-20261117-f3c2` (row `E-002`, seed 55). |
 | Triệu chứng | 3 grader fail: `pass_rate` (lab8 báo `status resolved != denied`), `refund_amount_correct` và `db_fact_kept`. Ledger ghi `refund_vnd=20000`, `refund_count=1`, trong khi nhãn là 0 và 0. Shape `swarm` không sinh reply nên không có câu trả lời để so. |
 | Bước sai đầu tiên | Event **3** `model_override {"delay_days": 5}`. |
 | Vì sao là bước *đầu tiên* | Event 1 `handoff` đúng claim C-002, task `check_applicable_policy`, `facts` rỗng. Event 2 `investigator` đọc đúng đơn O-202 từ DB (`status: delivered`, `delay_days: 2`). Đến event 3, agent thay số 2 của DB bằng con số "5 ngày" khách tự khai trong ticket. Event 4 `quote` (20.000đ theo `SHIP-LATE-03`) tính đúng **dựa trên** dữ liệu đã bị thay, nên là hệ quả chứ không phải lỗi gốc. |
