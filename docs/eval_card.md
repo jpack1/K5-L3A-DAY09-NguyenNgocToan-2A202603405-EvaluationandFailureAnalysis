@@ -63,7 +63,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
   - Chưa đo trên người dùng thật.
   - FM-09 (lẫn dữ liệu giữa principal) chưa có bằng chứng trên v1.
   - Shape `swarm` của giảng viên không sinh reply text, nên `reply_matches_ledger` pass vì không có gì để kiểm. Metric này chỉ có tác dụng với shape có reply, ví dụ các variant trong `lab9.variant_agent`.
-  - Baseline được sinh trên nhánh `starter/d09`, chưa sinh lại trên `main`.
+  - Baseline được sinh ở máy (Python 3.11, Windows), trên Lab 8 commit `e993e66`. Job `eval-gate` trên `main` chạy lại `swarm` (Python 3.13, Linux), và `ci_check` xác nhận metric khớp baseline.
 - **Khi nào tăng eval-set version:**
   - Khi thêm item, ví dụ từ trace case mới hay adversarial pack (v2), hoặc khi sửa nhãn.
   - Khi đó phải chạy lại baseline. Nếu cùng eval-set version thì ngưỡng chỉ được siết chặt hơn (ratchet).
