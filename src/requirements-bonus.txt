@@ -1,0 +1,3 @@
+# Bonus only (python -m lab9.bonus_deepeval). Not needed by CI or the core lab.
+-r requirements-lab9.txt
+deepeval==4.3.4

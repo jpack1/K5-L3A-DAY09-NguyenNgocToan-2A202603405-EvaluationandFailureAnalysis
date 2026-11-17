@@ -154,3 +154,28 @@ Gate từ chối so sánh report khi phát hiện một trong các dấu hiệu 
   - **Sửa `labels_v*.json`:** `eval_set_sha` chỉ băm file item, không băm file nhãn. Đổi nhãn cho khớp với output sai thì gate không biết. Nên băm cả nhãn vào manifest.
   - **Nới spec mà không truyền `--base-spec`:** ratchet chỉ chạy khi có `--base-spec`, mà job `eval-gate` hiện không truyền tham số này. Nên lấy spec từ `main` để so trong CI.
   - **Tăng eval-set version để né ratchet:** ratchet chỉ áp khi hai spec cùng version, nên chỉ cần đổi `eval_set_version` là thoát. Cần review thủ công mọi PR đổi version.
+
+## Bonus: port grader sang DeepEval
+- **Lệnh:** `pip install -r requirements-bonus.txt` rồi `python -m lab9.bonus_deepeval`. Kết quả ghi ra `reports/bonus_deepeval.json`.
+- **Port những gì:**
+  - 3 grader thành `deepeval.metrics.BaseMetric`: `RefundAmountCorrect`, `ApprovalBypass` và `ReplyMatchesLedger` (FM-08).
+  - Mỗi trial là một `LLMTestCase`: `input` là ticket, `actual_output` là reply, `expected_output` là nhãn. Trial (ledger, events) đi kèm qua `metadata`.
+  - Chạy bằng `deepeval.evaluate`, đồng bộ, không cache.
+  - Các metric được viết lại từ **quy tắc chấm**, không gọi `lab9.graders`. Vì vậy, nếu hai bên bất đồng thì nghĩa là một trong hai bản cài sai.
+  - Không gọi LLM nào, telemetry tắt (`DEEPEVAL_TELEMETRY_OPT_OUT`).
+- **So khớp với harness pydantic-evals (`lab9.eval`), từng row (item, seed), spec v1:**
+
+| Shape | Trial | Khớp (3 metric) | Số lần DeepEval báo fail |
+|---|---|---|---|
+| `swarm` | 70 | 210/210 | RefundAmountCorrect 1 |
+| `fixed` | 70 | 210/210 | 0 |
+| `seeded_regression` | 70 | 210/210 | RefundAmountCorrect 10, ReplyMatchesLedger 15 |
+| `honest_refactor` | 70 | 210/210 | 0 |
+| `probe:sibling_refund` | 70 | 210/210 | RefundAmountCorrect 20, ApprovalBypass 20 |
+| `probe:ignore_denied+misreport` | 70 | 210/210 | ReplyMatchesLedger 20 |
+
+  Tổng cộng **1260/1260 kết quả khớp, 0 bất đồng**. Hai shape `probe:*` (agent `fixed` có bật thêm bug) được thêm vào để metric nào cũng gặp trial fail thật. Trên 4 shape công khai, `ApprovalBypass` không fail lần nào, nên nếu chỉ dùng 4 shape đó thì phép so cho metric này không chứng minh được gì.
+- **Nhận xét:**
+  - Với grader code thuần, DeepEval chỉ đóng vai một lớp vỏ: điểm số giống hệt.
+  - DeepEval có giá trị hơn ở các metric dùng LLM làm judge (G-Eval…). Nhưng các metric đó phải qua calibration như `docs/judge_audit.md` mới được dùng, và tiền với approval vẫn phải chấm bằng code.
+  - DeepEval tạo thư mục `src/.deepeval/` (cache lần chạy gần nhất). Thư mục này đã được đưa vào `.gitignore`.

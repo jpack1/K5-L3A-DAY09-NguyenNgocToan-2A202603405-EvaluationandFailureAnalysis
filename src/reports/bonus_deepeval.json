@@ -1,0 +1,146 @@
+[
+  {
+    "shape": "swarm",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 1,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      }
+    }
+  },
+  {
+    "shape": "fixed",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      }
+    }
+  },
+  {
+    "shape": "seeded_regression",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 10,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 15,
+        "mismatches": []
+      }
+    }
+  },
+  {
+    "shape": "honest_refactor",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      }
+    }
+  },
+  {
+    "shape": "probe:sibling_refund",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 20,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 20,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      }
+    }
+  },
+  {
+    "shape": "probe:ignore_denied+misreport",
+    "trials": 70,
+    "metrics": {
+      "RefundAmountCorrect": {
+        "pydantic_metric": "refund_amount_correct",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ApprovalBypass": {
+        "pydantic_metric": "approval_bypass",
+        "agree": 70,
+        "deepeval_fail": 0,
+        "mismatches": []
+      },
+      "ReplyMatchesLedger": {
+        "pydantic_metric": "reply_matches_ledger",
+        "agree": 70,
+        "deepeval_fail": 20,
+        "mismatches": []
+      }
+    }
+  }
+]
