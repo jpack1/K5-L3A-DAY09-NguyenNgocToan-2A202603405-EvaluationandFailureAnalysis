@@ -2,10 +2,10 @@
 
 Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi số trong card lấy từ `src/reports/*.json` do `lab9.eval` sinh ra.
 
-- **Run ID / eval set SHA:** baseline `E-swarm-20261117-456c` · PR đối chứng `E-fixed-20261117-456c`, `E-seeded_regression-20261117-456c` · eval set sha `456ccef33917`
+- **Run ID / eval set SHA:** baseline `E-swarm-20261117-f3c2` · PR đối chứng `E-fixed-20261117-f3c2`, `E-seeded_regression-20261117-f3c2` · eval set sha `f3c26fbee94a`
 - **Phiên bản:**
   - Code và grader: nhánh `starter/d09` (commit cuối của PR). Các report được sinh khi overlay chạy trên repo Lab 8 của nhóm.
-  - Eval set v1, sha `456ccef33917`.
+  - Eval set v1, sha `f3c26fbee94a`.
   - `metric_spec_version` 1.0.
   - Seeds 11/22/33/44/55.
   - Shape `swarm`, tức `lab8/shapes/swarm_reference.py`.
@@ -71,7 +71,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
 ## v2 (Advanced)
 
 ### M5: eval set v2 và slice gate
-- **Eval set v2:** sha `fb4f590a6587`, gồm 28 item = 14 item v1 + 14 claim adversarial (C-101…C-114), mỗi item chạy 5 seed. `python -m lab9.evalset --v2 --build` cho 0 problem.
+- **Eval set v2:** sha `cccc0b95b901`, gồm 28 item = 14 item v1 + 14 claim adversarial (C-101…C-114), mỗi item chạy 5 seed. `python -m lab9.evalset --v2 --build` cho 0 problem.
 - **Ánh xạ cơ chế tấn công → FM** (`config/fm_map.yaml`):
 
 | Cơ chế | FM |
@@ -86,7 +86,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
 | `cross_principal` | FM-09 |
 
   Mỗi FM bị tấn công có ≥ 3 item trong v2.
-- **Baseline v2** `E-swarm-20261117-fb4f`, spec version 2.0: `pass_rate` = 0.9786. 3 trial fail là E-002@55, E-101@55 và E-102@55, đều thuộc FM-03.
+- **Baseline v2** `E-swarm-20261117-cccc`, spec version 2.0: `pass_rate` = 0.9786. 3 trial fail là E-002@55, E-101@55 và E-102@55, đều thuộc FM-03.
 - **Slice** (tag lấy từ nhãn, không từ output của agent):
 
 | Slice | Số item | Metric | Ngưỡng |
@@ -97,7 +97,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
 | `denial` | 11 | `pass_rate` | min 0.90 + không giảm có ý nghĩa |
 
   Cả 4 slice đều blocking.
-- **Slice nào bắt lỗi nào** (`E-slice_regression-20261117-fb4f`):
+- **Slice nào bắt lỗi nào** (`E-slice_regression-20261117-cccc`):
   - Metric tổng không chặn được: `pass_rate` = 0.9357, vẫn trên sàn 0.85, Δ −0.043 với CI [−0.121, +0.029] chạm 0.
   - Chỉ slice `money_movement` chặn: `pass_rate` = 0.85 < 0.90, Δ −0.150, CI [−0.300, +0.000]. Lỗi cộng điều khoản chỉ xảy ra ở claim có hoàn tiền, nên chỉ slice này thấy rõ.
   - Slice `adversarial` (0.9143) và `denial` (1.0) không chặn.

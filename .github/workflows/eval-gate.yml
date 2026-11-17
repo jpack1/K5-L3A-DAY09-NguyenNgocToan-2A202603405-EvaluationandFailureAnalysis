@@ -3,13 +3,21 @@ on: [pull_request, workflow_dispatch]
 permissions: {contents: read}
 concurrency: {group: "eval-gate-${{ github.ref }}", cancel-in-progress: true}
 jobs:
-  # The starter repo is an overlay without src/lab8; its CI only runs once copied into a Lab 8 repo.
+  # The starter repo is an overlay without src/lab8; each job below fetches the pinned Lab 8 first.
   detect:
     runs-on: ubuntu-latest
     outputs: {lab8: "${{ steps.has.outputs.lab8 }}"}
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
+      # This repo holds only the Lab 9 overlay. Lay it on the team's public Lab 8 repo, pinned to the
+      # commit the reports were produced on: Lab 8 files only fill what the overlay lacks (README step 2).
+      - uses: actions/checkout@v7
+        with: {repository: datnguyen101004/K5-L3A-DAY08-DatToanAnKhanhQuan-FromWorkflowsToAgents,
+               ref: e993e66ac4de754c542d835d5cb92d3d2cef1925, path: .lab8, persist-credentials: false}
+      - name: Overlay Lab 9 onto the pinned Lab 8
+        working-directory: .
+        run: rsync -a --ignore-existing .lab8/src/ src/ && rm -rf .lab8
       - id: has
         run: "test -d src/lab8 && echo lab8=1 >> \"$GITHUB_OUTPUT\" || echo skip, overlay without src/lab8"
 
@@ -27,6 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
+      # This repo holds only the Lab 9 overlay. Lay it on the team's public Lab 8 repo, pinned to the
+      # commit the reports were produced on: Lab 8 files only fill what the overlay lacks (README step 2).
+      - uses: actions/checkout@v7
+        with: {repository: datnguyen101004/K5-L3A-DAY08-DatToanAnKhanhQuan-FromWorkflowsToAgents,
+               ref: e993e66ac4de754c542d835d5cb92d3d2cef1925, path: .lab8, persist-credentials: false}
+      - name: Overlay Lab 9 onto the pinned Lab 8
+        working-directory: .
+        run: rsync -a --ignore-existing .lab8/src/ src/ && rm -rf .lab8
       # setup-uv publishes only full tags (no @v10); pin the SHA.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: {python-version: "3.13", activate-environment: true, enable-cache: true, cache-dependency-glob: "src/requirements*.txt"}
@@ -70,6 +86,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
+      # This repo holds only the Lab 9 overlay. Lay it on the team's public Lab 8 repo, pinned to the
+      # commit the reports were produced on: Lab 8 files only fill what the overlay lacks (README step 2).
+      - uses: actions/checkout@v7
+        with: {repository: datnguyen101004/K5-L3A-DAY08-DatToanAnKhanhQuan-FromWorkflowsToAgents,
+               ref: e993e66ac4de754c542d835d5cb92d3d2cef1925, path: .lab8, persist-credentials: false}
+      - name: Overlay Lab 9 onto the pinned Lab 8
+        working-directory: .
+        run: rsync -a --ignore-existing .lab8/src/ src/ && rm -rf .lab8
       - id: has
         run: "test -f reports/baseline_v2.json && echo v2=1 >> \"$GITHUB_OUTPUT\" || echo skip, no baseline_v2"
       - if: steps.has.outputs.v2
