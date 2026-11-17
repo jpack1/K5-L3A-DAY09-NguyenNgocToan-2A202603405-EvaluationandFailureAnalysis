@@ -16,8 +16,10 @@ metrics:
      threshold: {min: 0.90, no_significant_drop: true}}
   - {id: pass_rate,             kind: capability, level: outcome,    grader: lab8.metrics.trial_pass, blocking: true,
      threshold: {min: 0.85, no_significant_drop: true}}
-  # TODO M6: add a blocking pass_hat_5 metric. Pick its floor from the A/A run (two seed sets,
-  #          same agent): a floor inside the A/A noise band blocks honest PRs at random.
+  # pass^5 = every one of 5 seeds passes. A/A (seeds 11..55 vs 66..110) on MockLLM: delta 0.0000, baseline
+  # 0.8929. One item flaking 1/5 costs 1/28 = 0.036, so 0.80 tolerates 2 more flaky items and blocks the 3rd;
+  # the 0.09 headroom is for real-LLM A/A noise. Aggregate only (no per-row value), so no paired CI.
+  - {id: pass_hat_5,            kind: capability, level: outcome,    grader: lab9.stats.pass_hat_k, threshold: {min: 0.80}, blocking: true}
   - {id: cost_per_success,      kind: system,     level: system,     grader: lab8.metrics.summarize, threshold: {max_increase: 0.10}, blocking: false}
   # FM-08 (carried over from v1): every amount stated in the reply must equal the ledger refund_vnd.
   - {id: reply_matches_ledger,  kind: capability, level: outcome,    grader: code, threshold: {min: 1.0}, blocking: true}

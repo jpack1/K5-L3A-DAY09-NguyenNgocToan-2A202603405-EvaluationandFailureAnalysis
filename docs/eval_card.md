@@ -106,3 +106,28 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi s�
   - Slice `money_movement` chặn được `slice_regression` là nhờ sàn (`min`), không phải nhờ CI, vì CI vẫn chạm 0 do chỉ có 12 item.
   - Một lỗi nhỏ hơn, ví dụ chỉ hỏng 1 trial/slice, sẽ cho 0.983 > 0.90 và lọt qua.
   - Vì sàn 0.90 nằm gần giá trị baseline 1.0, slice này rất nhạy với nhiễu khi chạy trên LLM thật. Cần đo A/A trước (M6).
+
+### M6: nhiễu, pass@k / pass^k
+- **A/A** (`python -m lab9.mutation --spec config/metric_spec_v2.yaml --aa 66,77,88,99,110`): chạy cùng shape `swarm` trên bộ seed 11–55 và bộ seed 66–110. Mọi metric đều có **Δ = +0.0000**: `pass_rate` 0.9786, `pass_hat_3` 0.9357, `pass_hat_5` 0.8929, `pass_at_5` 1.0.
+- **Vì sao trên LLM thật dải nhiễu > 0:**
+  - Với MockLLM, kết quả là hàm tất định của (claim, seed). Bug trong `swarm` bật đúng ở `seed % 5 == 0`, và cả hai bộ seed đều có đúng 1 seed như vậy (55 và 110), nên hai lần chạy cho cùng một con số.
+  - LLM thật lấy mẫu có nhiệt độ, và nhà cung cấp còn đổi model hay hạ tầng phía sau. Cùng một agent chạy hai lần sẽ ra hai `pass_rate` khác nhau.
+  - Nếu sàn nằm **trong** dải nhiễu đó, gate sẽ chặn PR trung thực một cách ngẫu nhiên. Vì vậy sàn phải đặt **ngoài** dải: với LLM thật, cần chạy A/A nhiều lần, lấy biên độ Δ lớn nhất, rồi đặt sàn ≤ baseline − biên độ đó.
+- **Sàn `pass_hat_5` ≥ 0.80 (blocking):**
+  - Baseline đang là 0.8929.
+  - Mỗi item fail 1/5 seed làm `pass_hat_5` mất 1/28 ≈ 0.036. Sàn 0.80 cho phép thêm 2 item chập chờn (còn 0.821), sang item thứ 3 thì chặn (0.786).
+  - Khoảng đệm 0.09 là dành cho nhiễu khi chạy LLM thật. A/A trên MockLLM cho biên độ 0, nên không thể dùng nó để đo khoảng đệm.
+  - `pass_hat_5` là số tổng thể, không có giá trị theo từng row, nên không bootstrap CI theo item được. Gate chỉ dùng sàn.
+- **`flaky_regression`** (`round_down` chỉ bật ở seed chia hết cho 3, tức seed 33 trong 5 seed):
+
+| Metric | baseline | flaky | Kết quả |
+|---|---|---|---|
+| `pass_hat_5` | 0.8929 | **0.5714** | **BLOCK** (dưới sàn 0.80 một khoảng 0.23) |
+| `pass_rate` | 0.9786 | 0.9143 | vẫn trên sàn 0.85; chỉ bị chặn vì CI Δ = [−0.114, **−0.014**] |
+| `pass_at_5` | 1.0 | 1.0 | không thấy lỗi, vì mỗi item đều pass ít nhất 1 lần |
+
+  Trên MockLLM, `pass_rate` có chặn được, nhưng cận trên của CI chỉ cách 0 có 0.014. Thêm một chút nhiễu của LLM thật là CI chạm 0 và lỗi lọt qua, nên `pass_rate` **không chặn ổn định**. `pass_hat_5` chặn với biên rộng hơn nhiều, vì nó đo đúng tính chất "mọi lần chạy đều phải đúng", còn trung bình thì làm loãng lỗi xảy ra 1/5 lần.
+- **Scorecard sau M6:** 3/3 regression bị chặn, 0 báo nhầm. `pass_hat_5` có mặt trong lý do chặn của cả `seeded_regression` và `flaky_regression`.
+- **Giới hạn cỡ mẫu:**
+  - Một bug chỉ bật khi `seed % 3 == 0` thì số seed bị lỗi phụ thuộc vào bộ seed: bộ 11–55 có 1 seed (33), bộ 66–110 có 2 seed (66, 99), còn bộ 10, 20, 40, 50, 70 thì không có seed nào.
+  - Với chỉ 5 seed, bug như vậy **không được phát hiện ổn định**: tuỳ bộ seed, gate có thể thấy hoặc không. Tôi giữ nguyên sàn chứ không hạ ngưỡng để "bắt" lỗi này. Cách đúng là tăng số seed, hoặc chọn seed ngẫu nhiên mỗi lần chạy CI.
